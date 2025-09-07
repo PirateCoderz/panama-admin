@@ -29,7 +29,7 @@ export async function GET(req) {
     const sql = `
       SELECT 
         b.id, b.title, b.slug, b.status, b.published_at, b.created_at, b.updated_at,
-        b.excerpt, b.featured_image_url,
+        b.excerpt, b.featured_image_url, b.canonical_url,
         GROUP_CONCAT(JSON_OBJECT('id', c.id, 'name', c.name) ORDER BY c.name SEPARATOR '||') AS cats
       FROM blogs b
       LEFT JOIN blog_categories bc ON bc.blog_id = b.id
@@ -52,6 +52,7 @@ export async function GET(req) {
       updated_at: r.updated_at,
       excerpt: r.excerpt,
       featured_image_url: r.featured_image_url,
+      canonical_url: r.canonical_url,
       categories: r.cats
         ? r.cats.split('||').map((j) => {
           try { return JSON.parse(j); } catch { return null; }

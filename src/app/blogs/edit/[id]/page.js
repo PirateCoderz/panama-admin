@@ -130,7 +130,7 @@ export default function EditBlogPage() {
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Failed to save');
-      router.push('/admin/blogs');
+      router.push('/blogs');
     } catch (e) {
       alert(e.message || 'Save failed');
     } finally {

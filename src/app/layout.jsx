@@ -31,7 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning={true} // optional if hydration warning persists
       >
-        <Header />
+        {/* <Header /> */}
         {children}
       </body>
     </html>

@@ -10,12 +10,12 @@ function fmtDate(dt) {
   const d = new Date(dt);
   if (Number.isNaN(d.getTime())) return dt;
   return d.toLocaleString();
-}
+};
 
 const STATUS_ALL = 'all';
 const STATUS = ['draft', 'scheduled', 'published', 'archived'];
 
-export default function AdminBlogsListPage() {
+function AdminBlogsListPageContent() {
   const router = useRouter();
   const sp = useSearchParams();
 
@@ -46,8 +46,8 @@ export default function AdminBlogsListPage() {
       setErr(e.message || 'Failed to load blogs');
     } finally {
       setLoading(false);
-    }
-  }
+    };
+  };
 
   useEffect(() => {
     loadBlogs();
@@ -74,7 +74,7 @@ export default function AdminBlogsListPage() {
     setOpen(true);
   }
   function onEdit(blog) {
-    router.push(`/admin/blogs/edit/${blog.id}`);
+    router.push(`/blogs/edit/${blog.id}`);
   }
 
   async function onDelete(blog) {
@@ -109,7 +109,7 @@ export default function AdminBlogsListPage() {
     const qs = new URLSearchParams();
     if (q.trim()) qs.set('q', q.trim());
     if (status !== STATUS_ALL) qs.set('status', status);
-    const url = `/admin/blogs${qs.toString() ? `?${qs}` : ''}`;
+    const url = `/blogs${qs.toString() ? `?${qs}` : ''}`;
     router.replace(url);
     loadBlogs();
   }
@@ -120,14 +120,14 @@ export default function AdminBlogsListPage() {
       <div className="border-b border-[color-mix(in_oklab,var(--text-secondary)_15%,transparent)] bg-[var(--surface)]/70 backdrop-blur">
         <div className="mx-auto max-w-6xl px-4 py-4">
           <nav className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-            <Link href="/admin" className="hover:text-[var(--primary)] transition-colors">Admin</Link>
+            <Link href="/" className="hover:text-[var(--primary)] transition-colors">Home</Link>
             <span>/</span>
             <span className="text-[var(--text-primary)]">Blogs</span>
           </nav>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">Blogs</h1>
             <Link
-              href="/admin/blogs/new"
+              href="/blogs/new"
               className="rounded-xl bg-[var(--primary,#00E5FF)] px-4 py-2 font-medium text-[var(--bg,#121212)] shadow-sm hover:brightness-95"
             >
               + New Blog
@@ -267,11 +267,11 @@ export default function AdminBlogsListPage() {
       {/* View Modal */}
       {open && selected && (
         <div
-          className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4"
+          className="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-black/80 p-4"
           onClick={() => { setOpen(false); setSelected(null); }}
         >
           <div
-            className="w-full max-w-3xl rounded-2xl border border-[color-mix(in_oklab,var(--text-secondary)_12%,transparent)] bg-[var(--surface)] p-6 shadow-xl"
+            className="bg-white w-full max-w-3xl rounded-2xl border border-[color-mix(in_oklab,var(--text-secondary)_12%,transparent)] p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -378,4 +378,8 @@ export default function AdminBlogsListPage() {
       )}
     </div>
   );
+}
+
+export default function AdminBlogsListPage() {
+  return <AdminBlogsListPageContent />;
 }
