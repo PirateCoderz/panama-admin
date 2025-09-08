@@ -1,4 +1,5 @@
 import pool from '@/lib/mysql';
+import Image from 'next/image';
 
 export const runtime = 'nodejs';
 export const revalidate = 0;
@@ -41,7 +42,7 @@ export default async function BlogPostPage({ params }) {
       <article className="prose mx-auto max-w-3xl p-6 dark:prose-invert">
         <h1>{post.title}</h1>
         {post.featured_image_url && (
-          <img src={post.featured_image_url} alt={post.title} className="my-4 rounded" />
+          <Image src={post.featured_image_url} alt={post.title} width={640} height={360} className="my-4 rounded" />
         )}
         <div dangerouslySetInnerHTML={{ __html: post.content_html || '' }} />
       </article>

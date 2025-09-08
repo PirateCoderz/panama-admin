@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { joditBaseConfig } from '@/lib/joditConfig';
 import { Image as PhotoIcon, Tags as TagIcon } from 'lucide-react';
+import Image from 'next/image';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
@@ -297,7 +298,7 @@ export default function NewPostFormJodit() {
               <label className="block text-sm font-medium text-gray-700">Featured Image</label>
               {featured ? (
                 <div className="mt-3 relative">
-                  <img src={featured} alt="featured" className="h-48 w-full rounded-xl object-cover ring-1 ring-black/5" />
+                  <Image src={featured} alt="featured" width={640} height={360} className="h-48 w-full rounded-xl object-cover ring-1 ring-black/5" />
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                       Replace

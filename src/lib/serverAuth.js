@@ -7,7 +7,7 @@ import { verifySession } from './auth-server';
  * @param {Request} request 
  * @returns {Promise<{authenticated: boolean, session: object|null, response: NextResponse|null}>}
  */
-export async function authenticateApiRequest(request) {
+export async function authenticateApiRequest() {
   try {
     const cookieStore = cookies();
     const sessionCookie = cookieStore.get('panama_admin_session');
@@ -17,7 +17,7 @@ export async function authenticateApiRequest(request) {
         authenticated: false,
         session: null,
         response: NextResponse.json(
-          { error: 'Authentication required' },
+          { error: 'Authentication required', message: error.message },
           { status: 401 }
         )
       };
@@ -28,7 +28,7 @@ export async function authenticateApiRequest(request) {
     if (!session) {
       // Clear invalid cookie
       const response = NextResponse.json(
-        { error: 'Invalid or expired session' },
+        { error: 'Invalid or expired session', message: error.message },
         { status: 401 }
       );
       response.cookies.delete('panama_admin_session');
@@ -50,7 +50,7 @@ export async function authenticateApiRequest(request) {
       authenticated: false,
       session: null,
       response: NextResponse.json(
-        { error: 'Authentication check failed' },
+        { error: 'Authentication check failed', message: error.message },
         { status: 500 }
       )
     };
@@ -97,6 +97,6 @@ export async function getServerAuth() {
       session
     };
   } catch (error) {
-    return { authenticated: false, session: null };
+    return { authenticated: false, session: null, error: error.message };
   }
 }

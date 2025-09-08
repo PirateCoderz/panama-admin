@@ -5,8 +5,9 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import mysqlPool from "@/lib/mysql";
 
-export async function GET(_req, { params }) {
-    const id = Number(params?.id);
+export async function GET(_req, context) {
+    const { params } = await context;
+    const id = Number(await params?.id);
     if (!id) {
         return NextResponse.json({ ok: false, error: 'Invalid id.' }, { status: 400 });
     }
@@ -34,7 +35,7 @@ export async function GET(_req, { params }) {
 export async function PUT(req, { params }) {
     let conn;
     try {
-        const id = Number(params?.id);
+        const id = Number(await params?.id);
         if (!id) {
             return NextResponse.json({ ok: false, error: "Invalid id." }, { status: 400 });
         }
@@ -74,7 +75,7 @@ export async function PUT(req, { params }) {
 export async function DELETE(_req, { params }) {
     let conn;
     try {
-        const id = Number(params?.id);
+        const id = Number(await params?.id);
         if (!id) {
             return NextResponse.json({ ok: false, error: "Invalid id." }, { status: 400 });
         }

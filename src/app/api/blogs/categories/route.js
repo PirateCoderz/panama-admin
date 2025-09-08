@@ -15,7 +15,7 @@ export async function GET() {
     try {
         console.log("API is working")
         conn = await mysqlPool.getConnection();
-        console.log(conn)
+        // console.log(conn)
         const [rows] = await conn.query(
             "SELECT id, name, slug, description, created_at, updated_at FROM categories ORDER BY created_at DESC"
         );

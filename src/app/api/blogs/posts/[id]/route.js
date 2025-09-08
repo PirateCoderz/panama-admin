@@ -5,9 +5,13 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import mysqlPool from '@/lib/mysql';
 
-export async function GET(_req, { params }) {
-  const id = Number(params?.id);
-  if (!id) return NextResponse.json({ ok: false, error: 'Invalid id' }, { status: 400 });
+export async function GET(_req, context) {
+  const { params } = await context;   // ✅ Fix: await context
+  const id = Number(params.id);
+  if (!id) {
+    return NextResponse.json({ ok: false, error: 'Invalid id' }, { status: 400 });
+  }
+
   let conn;
   try {
     conn = await mysqlPool.getConnection();
@@ -19,8 +23,11 @@ export async function GET(_req, { params }) {
        FROM blogs WHERE id=? LIMIT 1`,
       [id]
     );
+
     const blog = rows?.[0] || null;
-    if (!blog) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    if (!blog) {
+      return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
+    }
 
     const [cats] = await conn.query(
       'SELECT category_id FROM blog_categories WHERE blog_id=?',
@@ -43,9 +50,12 @@ export async function GET(_req, { params }) {
   }
 }
 
-export async function PUT(req, { params }) {
-  const id = Number(params?.id);
-  if (!id) return NextResponse.json({ ok: false, error: 'Invalid id' }, { status: 400 });
+export async function PUT(req, context) {
+  const { params } = await context;   // ✅ Fix: await context
+  const id = Number(params.id);
+  if (!id) {
+    return NextResponse.json({ ok: false, error: 'Invalid id' }, { status: 400 });
+  }
 
   let conn;
   try {
@@ -118,7 +128,9 @@ export async function PUT(req, { params }) {
     return NextResponse.json({ ok: true, message: 'Blog updated' });
   } catch (e) {
     console.error('[PUT /api/blogs/posts/:id] Error:', e);
-    try { if (conn) await conn.rollback(); } catch {}
+    try {
+      if (conn) await conn.rollback();
+    } catch {}
     if (e?.code === 'ER_DUP_ENTRY') {
       return NextResponse.json({ ok: false, error: 'Slug already exists.' }, { status: 409 });
     }

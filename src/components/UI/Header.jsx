@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, Phone, Home, Briefcase, Mail } from 'lucide-react';
+import Image from 'next/image';
 
 // Keep only 3 items
 const menuLinks = [
@@ -124,9 +125,11 @@ export default function Header() {
       <div className="hidden lg:flex justify-between items-center py-2 px-6">
         {/* Logo */}
         <Link href="/">
-          <img
+          <Image
             src="/images/panamatravellogo.png"
             alt="Logo"
+            width={200}
+            height={50}
             className="h-16 w-auto transition-opacity"
           />
         </Link>

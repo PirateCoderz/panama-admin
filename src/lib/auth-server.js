@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+// import { NextResponse } from 'next/server';
 
 // Simple local authentication credentials (in production, use environment variables)
 const AUTH_CREDENTIALS = {
@@ -60,6 +60,7 @@ export function verifySession(token) {
     
     return sessionData;
   } catch (error) {
+    console.log('Error verifying session token:', error.message);
     return null;
   }
 }
@@ -78,6 +79,7 @@ export async function isAuthenticated() {
     const session = verifySession(sessionCookie.value);
     return session !== null;
   } catch (error) {
+    console.log('Error checking authentication:', error.message);
     return false;
   }
 }
@@ -95,6 +97,7 @@ export async function getCurrentSession() {
     
     return verifySession(sessionCookie.value);
   } catch (error) {
+    console.log('Error getting current session:', error.message);
     return null;
   }
 }

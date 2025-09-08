@@ -1,4 +1,5 @@
 import pool from '@/lib/mysql';
+import Image from 'next/image';
 
 export const runtime = 'nodejs';
 export const revalidate = 0; // disable ISR while developing
@@ -19,9 +20,11 @@ export default async function BlogIndexPage() {
         {posts.map((p) => (
           <li key={p.id} className="border rounded p-4">
             {p.featured_image_url && (
-              <img
+              <Image
                 src={p.featured_image_url}
                 alt={p.title}
+                width={640}
+                height={360}
                 className="mb-3 h-40 w-full rounded object-cover"
               />
             )}

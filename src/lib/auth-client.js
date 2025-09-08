@@ -20,7 +20,8 @@ export const clientAuth = {
       
       return response.ok;
     } catch (error) {
-      console.error('Login error:', error);
+      // console.error('Login error:', error);
+      console.log('Login error:', error.message);
       return false;
     }
   },
@@ -51,6 +52,7 @@ export const clientAuth = {
       const response = await fetch('/api/auth/check');
       return response.ok;
     } catch (error) {
+      console.log('Auth check error:', error.message);
       return false;
     }
   },
@@ -74,6 +76,7 @@ export function verifySessionClient(token) {
     
     return sessionData;
   } catch (error) {
+    console.log('Error verifying session token:', error.message);
     return null;
   }
 }
