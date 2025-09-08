@@ -3,9 +3,11 @@ import { cookies } from 'next/headers';
 
 // Simple local authentication credentials (in production, use environment variables)
 const AUTH_CREDENTIALS = {
-  username: 'admin',
-  password: 'admin123', // Change this to a secure password
+  username: 'adminpanamatravel',
+  password: '))np0Gq$p1I+$e', // Change this to a secure password
 };
+// create a complex password of 12 words mix everything with numbers
+
 
 // Session configuration
 const SESSION_DURATION = 5 * 60 * 60 * 1000; // 5 hours in milliseconds

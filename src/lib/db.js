@@ -20,9 +20,9 @@ import mysql from "mysql2/promise";
 
 export async function getDB() {
     const connection = await mysql.createConnection({
-        host: process.env.DB_HOST || '127.0.0.1',
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASS || '',
+        host: process.env.DB_HOST || '92.205.172.11',
+        user: process.env.DB_USER || 'rootweb',
+        password: process.env.DB_PASS || 'innoHorizon!!2121',
         database: process.env.DB_NAME || 'panama',
     });
     return connection;

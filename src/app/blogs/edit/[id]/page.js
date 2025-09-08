@@ -5,8 +5,8 @@ import EditBlogPage from "@/components/Blogs/EditBlogPage";
 import { useParams } from 'next/navigation';
 
 const Page = () => {
-    const { id } = useParams();
-  
+  const { id } = useParams();
+
   return (
     <Suspense fallback={<div> Edit Page Loading...</div>}>
       <EditBlogPage id={id} />

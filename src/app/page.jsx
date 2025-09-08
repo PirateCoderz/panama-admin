@@ -54,7 +54,7 @@ function AdminDashboardContent() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/GetBlogs", {
+      const response = await fetch("/api/blogs/posts", {
         method: "GET",
       });
       if (response.ok) {
@@ -134,7 +134,7 @@ function AdminDashboardContent() {
     {
       title: "Create New Post",
       icon: <Plus className="w-5 h-5" />,
-      href: "/admin/blogs/new",
+      href: "/blogs/new",
       color: "bg-blue-500 hover:bg-blue-600",
     },
     {

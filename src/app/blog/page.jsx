@@ -1,11 +1,11 @@
-import pool from '@/lib/mysql';
+import mysqlpool from '@/lib/mysql';
 import Image from 'next/image';
 
 export const runtime = 'nodejs';
 export const revalidate = 0; // disable ISR while developing
 
 export default async function BlogIndexPage() {
-  const [posts] = await pool.query(
+  const [posts] = await mysqlpool.query(
     `SELECT id, title, slug, excerpt, featured_image_url, published_at
      FROM blogs
      WHERE status='published' AND deleted_at IS NULL
