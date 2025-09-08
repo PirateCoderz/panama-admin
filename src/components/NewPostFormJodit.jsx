@@ -1,10 +1,12 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Swal from "sweetalert2";
+
 import { joditBaseConfig } from '@/lib/joditConfig';
 import { Image as PhotoIcon, Tags as TagIcon } from 'lucide-react';
-import Image from 'next/image';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
@@ -67,16 +69,92 @@ export default function NewPostFormJodit() {
         const res = await fetch('/api/blogs/categories', { cache: 'no-store' });
         const data = await res.json();
         if (data?.ok && Array.isArray(data.categories)) setCategories(data.categories);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
+
+
   async function uploadFeatured(file) {
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/blogs/upload?folder=featured', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data?.ok && data?.url) setFeatured(data.url);
+    if (!file) return;
+
+    const MAX_BYTES = Math.floor(1.5 * 1024 * 1024); // 1.5 MB = 1,572,864 bytes
+    if (file.size > MAX_BYTES) {
+      await Swal.fire({
+        icon: "error",
+        title: "File too large",
+        text: "Please upload an image smaller than 1.5 MB.",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch("/api/blogs/upload?folder=featured", {
+        method: "POST",
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        await Swal.fire({
+          icon: "error",
+          title: "Upload failed",
+          text: data?.error || "Something went wrong while uploading.",
+        });
+        return;
+      }
+
+      // Prefer absolute_url if your API returns it; fallback to url
+      const url = data.absolute_url || data.url;
+      if (url) {
+        setFeatured(url);
+        // optional success toast
+        // await Swal.fire({ icon: "success", title: "Uploaded!", timer: 1200, showConfirmButton: false });
+      }
+    } catch (err) {
+      await Swal.fire({
+        icon: "error",
+        title: "Network error",
+        text: "Please check your connection and try again.",
+      });
+    }
+  }
+
+
+  // async function uploadFeatured(file) {
+  //   const fd = new FormData();
+  //   fd.append('file', file);
+  //   const res = await fetch('/api/blogs/upload?folder=featured', { method: 'POST', body: fd });
+  //   const data = await res.json();
+  //   console.log(data);
+  //   if (data?.ok && data?.url) setFeatured(data.url);
+  // }
+
+  async function removeFeatured() {
+    if (!featured) {
+      setFeatured('');
+      return;
+    }
+    try {
+      // Normalize to a path string for the API
+      const targetPath = featured.startsWith('https')
+        ? new URL(featured).pathname
+        : featured;
+
+      const res = await fetch(`/api/blogs/upload?url=${encodeURIComponent(targetPath)}`, {
+        method: 'DELETE',
+      });
+      // Optional: check response
+      // const data = await res.json();
+    } catch (e) {
+      console.warn('Failed to delete image on server, clearing locally anyway:', e);
+    } finally {
+      setFeatured(''); // clear UI regardless
+    }
   }
 
   async function uploadInline(file) {
@@ -143,13 +221,12 @@ export default function NewPostFormJodit() {
           </div>
           <div className="flex items-center gap-2">
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                status === 'published'
-                  ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                  : status === 'scheduled'
+              className={`px-2.5 py-1 rounded-full text-xs font-medium ${status === 'published'
+                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                : status === 'scheduled'
                   ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200'
                   : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-              }`}
+                }`}
             >
               {status}
             </span>
@@ -272,7 +349,7 @@ export default function NewPostFormJodit() {
                       className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
                       value={canonicalUrl}
                       onChange={(e) => setCanonicalUrl(e.target.value)}
-                      placeholder="https://panamatravel.co.uk/blogs/your-slug"
+                      placeholder="https://admin.panamatravel.co.uk/images/bogs/"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -304,7 +381,7 @@ export default function NewPostFormJodit() {
                       Replace
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && uploadFeatured(e.target.files[0])} />
                     </label>
-                    <button type="button" onClick={() => setFeatured('')} className="rounded-xl border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <button type="button" onClick={removeFeatured} className="rounded-xl border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                       Remove
                     </button>
                   </div>
@@ -330,15 +407,14 @@ export default function NewPostFormJodit() {
                     key={s}
                     type="button"
                     onClick={() => setStatus(s)}
-                    className={`rounded-xl px-3 py-2 text-sm font-medium ring-1 transition ${
-                      status === s
-                        ? s === 'published'
-                          ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
-                          : s === 'scheduled'
+                    className={`rounded-xl px-3 py-2 text-sm font-medium ring-1 transition ${status === s
+                      ? s === 'published'
+                        ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
+                        : s === 'scheduled'
                           ? 'bg-cyan-50 text-cyan-800 ring-cyan-200'
                           : 'bg-amber-50 text-amber-800 ring-amber-200'
-                        : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'
-                    }`}
+                      : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'
+                      }`}
                   >
                     {s[0].toUpperCase() + s.slice(1)}
                   </button>
