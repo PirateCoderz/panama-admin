@@ -17,14 +17,14 @@ function toSlug(s) {
     .replace(/['"]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
-}
+};
 
 function parseTags(input) {
   return (input || '')
     .split(',')
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
-}
+};
 
 export default function NewPostFormJodit() {
   const editorRef = useRef(null);
@@ -110,8 +110,11 @@ export default function NewPostFormJodit() {
 
       // Prefer absolute_url if your API returns it; fallback to url
       const url = data.absolute_url || data.url;
+      console.log(url);
+
       if (url) {
         setFeatured(url);
+        setCanonicalUrl(url);
         // optional success toast
         // await Swal.fire({ icon: "success", title: "Uploaded!", timer: 1200, showConfirmButton: false });
       }
