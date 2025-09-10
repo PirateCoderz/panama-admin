@@ -14,6 +14,7 @@ import {
   Calendar,
   TrendingUp,
   Eye,
+  Tags,
   Edit3,
   Plus,
   Sun,
@@ -27,6 +28,7 @@ function AdminDashboardContent() {
   const [darkMode, setDarkMode] = useState(false);
   const [stats, setStats] = useState({
     totalBlogs: 0,
+    totalCategories: 0,
     totalViews: 0,
     totalUsers: 0,
     recentPosts: 0,
@@ -38,7 +40,7 @@ function AdminDashboardContent() {
     if (savedDarkMode) {
       setDarkMode(JSON.parse(savedDarkMode));
     }
-    
+
     // Fetch basic stats
     fetchStats();
   }, []);
@@ -57,14 +59,22 @@ function AdminDashboardContent() {
       const response = await fetch("/api/blogs/posts", {
         method: "GET",
       });
+      const response2 = await fetch("/api/blogs/categories", {
+        method: "GET",
+      });
+      const categories = await response2.json();
+
       if (response.ok) {
-        const blogs = await response.json();
+        const data = await response.json();
+        const blogs = await data.blogs;
+
         setStats({
           totalBlogs: blogs.length,
-          totalViews: blogs.reduce((sum, blog) => sum + (blog.views || 0), 0),
+          totalCategories: categories.categories.length,
+          // totalViews: blogs.reduce((sum, blog) => sum + (blog.views || 0), 0),
           totalUsers: 1, // Static for now
           recentPosts: blogs.filter(blog => {
-            const createdAt = new Date(blog.createdAt);
+            const createdAt = new Date(blog.published_at);
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             return createdAt > thirtyDaysAgo;
@@ -100,6 +110,15 @@ function AdminDashboardContent() {
       color: "from-blue-500 to-blue-600",
       available: true,
       stats: `${stats.totalBlogs} Posts`,
+    },
+    {
+      title: "Categories Management",
+      description: "Create, edit, and manage blog categories",
+      icon: <Tags className="w-8 h-8" />,
+      href: "/categories",
+      color: "from-blue-500 to-blue-600",
+      available: true,
+      stats: `${stats.totalCategories || 0} Categories`,
     },
     {
       title: "Website Content",
@@ -159,17 +178,15 @@ function AdminDashboardContent() {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode ? "dark bg-gray-950" : "bg-gray-50"
-      }`}
+      className={`min-h-screen transition-colors duration-300 ${darkMode ? "dark bg-gray-950" : "bg-gray-50"
+        }`}
     >
       {/* Header */}
       <header
-        className={`${
-          darkMode
-            ? "bg-gray-900/95 border-gray-800"
-            : "bg-white/95 border-gray-200"
-        } backdrop-blur-sm border-b sticky top-0 z-50`}
+        className={`${darkMode
+          ? "bg-gray-900/95 border-gray-800"
+          : "bg-white/95 border-gray-200"
+          } backdrop-blur-sm border-b sticky top-0 z-50`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -179,16 +196,14 @@ function AdminDashboardContent() {
               </div>
               <div>
                 <h1
-                  className={`text-xl font-bold ${
-                    darkMode ? "text-gray-100" : "text-gray-900"
-                  }`}
+                  className={`text-xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"
+                    }`}
                 >
                   Admin Dashboard
                 </h1>
                 <p
-                  className={`text-sm ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   Panama Travel Administration
                 </p>
@@ -207,18 +222,16 @@ function AdminDashboardContent() {
               </button>
               <Link
                 href="https://panamatravel.co.uk/blogs"
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  darkMode
-                    ? "border-gray-700 text-gray-300 hover:bg-gray-800"
-                    : "border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
+                className={`px-4 py-2 rounded-lg border transition-colors ${darkMode
+                  ? "border-gray-700 text-gray-300 hover:bg-gray-800"
+                  : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
               >
                 View Site
               </Link>
               <div className="flex items-center space-x-2">
-                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
-                  darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-700"
-                }`}>
+                <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-700"
+                  }`}>
                   <User className="w-4 h-4" />
                   <span className="text-sm font-medium">{user}</span>
                 </div>
@@ -239,41 +252,36 @@ function AdminDashboardContent() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2
-            className={`text-3xl font-bold ${
-              darkMode ? "text-gray-100" : "text-gray-900"
-            } mb-2`}
+            className={`text-3xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"
+              } mb-2`}
           >
             Welcome back!
           </h2>
           <p
-            className={`text-lg ${
-              darkMode ? "text-gray-400" : "text-gray-600"
-            }`}
+            className={`text-lg ${darkMode ? "text-gray-400" : "text-gray-600"
+              }`}
           >
             Here's what's happening with your website today.
           </p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div
-            className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
+            className={`${darkMode ? "bg-gray-800" : "bg-white"
+              } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
           >
             <div className="flex items-center justify-between">
               <div>
                 <p
-                  className={`text-sm font-medium ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   Total Posts
                 </p>
                 <p
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-gray-100" : "text-gray-900"
-                  }`}
+                  className={`text-2xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"
+                    }`}
                 >
                   {stats.totalBlogs}
                 </p>
@@ -284,24 +292,21 @@ function AdminDashboardContent() {
             </div>
           </div>
 
-          <div
-            className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
+          {/* <div
+            className={`${darkMode ? "bg-gray-800" : "bg-white"
+              } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
           >
             <div className="flex items-center justify-between">
               <div>
                 <p
-                  className={`text-sm font-medium ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   Total Views
                 </p>
                 <p
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-gray-100" : "text-gray-900"
-                  }`}
+                  className={`text-2xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"
+                    }`}
                 >
                   {stats.totalViews}
                 </p>
@@ -310,26 +315,23 @@ function AdminDashboardContent() {
                 <Eye className="w-6 h-6 text-green-500" />
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div
-            className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
+            className={`${darkMode ? "bg-gray-800" : "bg-white"
+              } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
           >
             <div className="flex items-center justify-between">
               <div>
                 <p
-                  className={`text-sm font-medium ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   Recent Posts
                 </p>
                 <p
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-gray-100" : "text-gray-900"
-                  }`}
+                  className={`text-2xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"
+                    }`}
                 >
                   {stats.recentPosts}
                 </p>
@@ -341,23 +343,20 @@ function AdminDashboardContent() {
           </div>
 
           <div
-            className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
+            className={`${darkMode ? "bg-gray-800" : "bg-white"
+              } rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700`}
           >
             <div className="flex items-center justify-between">
               <div>
                 <p
-                  className={`text-sm font-medium ${
-                    darkMode ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   Active Users
                 </p>
                 <p
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-gray-100" : "text-gray-900"
-                  }`}
+                  className={`text-2xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"
+                    }`}
                 >
                   {stats.totalUsers}
                 </p>
@@ -372,9 +371,8 @@ function AdminDashboardContent() {
         {/* Quick Actions */}
         <div className="mb-8">
           <h3
-            className={`text-xl font-semibold ${
-              darkMode ? "text-gray-100" : "text-gray-900"
-            } mb-4`}
+            className={`text-xl font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"
+              } mb-4`}
           >
             Quick Actions
           </h3>
@@ -397,9 +395,8 @@ function AdminDashboardContent() {
           {/* Admin Cards */}
           <div>
             <h3
-              className={`text-xl font-semibold ${
-                darkMode ? "text-gray-100" : "text-gray-900"
-              } mb-6`}
+              className={`text-xl font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"
+                } mb-6`}
             >
               Administration
             </h3>
@@ -407,9 +404,8 @@ function AdminDashboardContent() {
               {adminCards.map((card) => (
                 <div
                   key={card.title}
-                  className={`${
-                    darkMode ? "bg-gray-800" : "bg-white"
-                  } rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden group transition-all duration-300 hover:shadow-xl`}
+                  className={`${darkMode ? "bg-gray-800" : "bg-white"
+                    } rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden group transition-all duration-300 hover:shadow-xl`}
                 >
                   {card.available ? (
                     <Link href={card.href} className="block">
@@ -423,31 +419,27 @@ function AdminDashboardContent() {
                             </div>
                             <div className="flex-1">
                               <h4
-                                className={`text-lg font-semibold ${
-                                  darkMode ? "text-gray-100" : "text-gray-900"
-                                } mb-2 group-hover:text-teal-500 transition-colors`}
+                                className={`text-lg font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"
+                                  } mb-2 group-hover:text-teal-500 transition-colors`}
                               >
                                 {card.title}
                               </h4>
                               <p
-                                className={`${
-                                  darkMode ? "text-gray-400" : "text-gray-600"
-                                } mb-3`}
+                                className={`${darkMode ? "text-gray-400" : "text-gray-600"
+                                  } mb-3`}
                               >
                                 {card.description}
                               </p>
                               <div className="flex items-center justify-between">
                                 <span
-                                  className={`text-sm font-medium ${
-                                    darkMode ? "text-gray-300" : "text-gray-700"
-                                  }`}
+                                  className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"
+                                    }`}
                                 >
                                   {card.stats}
                                 </span>
                                 <ChevronRight
-                                  className={`w-5 h-5 ${
-                                    darkMode ? "text-gray-400" : "text-gray-500"
-                                  } group-hover:text-teal-500 transition-colors`}
+                                  className={`w-5 h-5 ${darkMode ? "text-gray-400" : "text-gray-500"
+                                    } group-hover:text-teal-500 transition-colors`}
                                 />
                               </div>
                             </div>
@@ -466,33 +458,29 @@ function AdminDashboardContent() {
                           </div>
                           <div className="flex-1">
                             <h4
-                              className={`text-lg font-semibold ${
-                                darkMode ? "text-gray-100" : "text-gray-900"
-                              } mb-2`}
+                              className={`text-lg font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"
+                                } mb-2`}
                             >
                               {card.title}
                             </h4>
                             <p
-                              className={`${
-                                darkMode ? "text-gray-400" : "text-gray-600"
-                              } mb-3`}
+                              className={`${darkMode ? "text-gray-400" : "text-gray-600"
+                                } mb-3`}
                             >
                               {card.description}
                             </p>
                             <div className="flex items-center justify-between">
                               <span
-                                className={`text-sm font-medium ${
-                                  darkMode ? "text-gray-300" : "text-gray-700"
-                                }`}
+                                className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"
+                                  }`}
                               >
                                 {card.stats}
                               </span>
                               <span
-                                className={`text-xs px-2 py-1 rounded-full ${
-                                  darkMode
-                                    ? "bg-gray-700 text-gray-300"
-                                    : "bg-gray-200 text-gray-600"
-                                }`}
+                                className={`text-xs px-2 py-1 rounded-full ${darkMode
+                                  ? "bg-gray-700 text-gray-300"
+                                  : "bg-gray-200 text-gray-600"
+                                  }`}
                               >
                                 Coming Soon
                               </span>
@@ -510,16 +498,14 @@ function AdminDashboardContent() {
           {/* Recent Activity */}
           <div>
             <h3
-              className={`text-xl font-semibold ${
-                darkMode ? "text-gray-100" : "text-gray-900"
-              } mb-6`}
+              className={`text-xl font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"
+                } mb-6`}
             >
               Recent Activity
             </h3>
             <div
-              className={`${
-                darkMode ? "bg-gray-800" : "bg-white"
-              } rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6`}
+              className={`${darkMode ? "bg-gray-800" : "bg-white"
+                } rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6`}
             >
               <div className="space-y-4">
                 {recentActivity.map((activity, index) => (
@@ -530,16 +516,14 @@ function AdminDashboardContent() {
                     <div className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <p
-                        className={`font-medium ${
-                          darkMode ? "text-gray-200" : "text-gray-900"
-                        }`}
+                        className={`font-medium ${darkMode ? "text-gray-200" : "text-gray-900"
+                          }`}
                       >
                         {activity.action}
                       </p>
                       <p
-                        className={`text-sm ${
-                          darkMode ? "text-gray-400" : "text-gray-600"
-                        }`}
+                        className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"
+                          }`}
                       >
                         {activity.time}
                       </p>
@@ -551,23 +535,20 @@ function AdminDashboardContent() {
 
             {/* System Status */}
             <div
-              className={`${
-                darkMode ? "bg-gray-800" : "bg-white"
-              } rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mt-6`}
+              className={`${darkMode ? "bg-gray-800" : "bg-white"
+                } rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mt-6`}
             >
               <h4
-                className={`text-lg font-semibold ${
-                  darkMode ? "text-gray-100" : "text-gray-900"
-                } mb-4`}
+                className={`text-lg font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"
+                  } mb-4`}
               >
                 System Status
               </h4>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span
-                    className={`${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    className={`${darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
                   >
                     Database
                   </span>
@@ -580,9 +561,8 @@ function AdminDashboardContent() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span
-                    className={`${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    className={`${darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
                   >
                     API Services
                   </span>
@@ -595,9 +575,8 @@ function AdminDashboardContent() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span
-                    className={`${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
+                    className={`${darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
                   >
                     File Storage
                   </span>

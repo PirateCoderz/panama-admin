@@ -1,108 +1,96 @@
+// /src/middleware.js
 import { NextResponse } from 'next/server';
 import { verifySession } from '@/lib/auth-server';
 
-// Define protected routes - admin dashboard at root and admin routes
-const ADMIN_ROUTES_PREFIX = '/admin';
+// ----- CORS config -----
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+// e.g. ALLOWED_ORIGINS="https://panamatravel.co.uk,https://www.panamatravel.co.uk,http://localhost:5173"
 
-// Define public routes that don't need authentication
-const PUBLIC_ROUTES = [
-  '/login',
-  '/blog',
-  '/api/GetBlogs', // Public API for fetching blogs
-];
+const CORS_METHODS = 'GET,POST,PUT,DELETE,OPTIONS';
+const CORS_HEADERS = 'Content-Type, Authorization';
+const CORS_ALLOW_CREDENTIALS = false; // set true only if you need cross-site cookies
 
-// Define auth-related routes
-const AUTH_ROUTES = [
-  '/api/auth/login',
-  '/api/auth/logout', 
-  '/api/auth/check',
-];
+// ----- Public paths -----
+const PUBLIC_PAGES = new Set(['/login', '/access-denied' , '/auth']);
 
-export function middleware(request) {
-  const { pathname } = request.nextUrl;
-  
-  // Skip middleware for static files and Next.js internals
-  if (
-    pathname.startsWith('/_next/') ||
-    pathname.includes('.') || // Skip files with extensions (images, etc.)
-    pathname.startsWith('/favicon')
-  ) {
-    return NextResponse.next();
-  }
-  
-  // Allow auth-related routes
-  const isAuthRoute = AUTH_ROUTES.includes(pathname);
-  if (isAuthRoute) {
-    return NextResponse.next();
-  }
-  
-  // Allow other API routes (except admin APIs)
-  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/admin/')) {
-    return NextResponse.next();
-  }
-  
-  // Check if the route is public
-  const isPublicRoute = PUBLIC_ROUTES.some(route => {
-    if (route === pathname) return true;
-    if (pathname.startsWith(route + '/') && route !== '/') return true;
-    return false;
-  });
-  
-  // If it's a public route, allow access
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
-  
-  // Check if this is an admin route (homepage or any route starting with /admin)
-  const isAdminRoute = pathname === '/' || pathname.startsWith(ADMIN_ROUTES_PREFIX);
-  
-  // If it's not an admin route, allow access
-  if (!isAdminRoute) {
-    return NextResponse.next();
-  }
-  
-  // Get session cookie
-  const sessionCookie = request.cookies.get('panama_admin_session');
-  
-  // If no session cookie, show access denied
-  if (!sessionCookie) {
-    return rewriteToAccessDenied(request);
-  }
-  
-  // Verify session
-  const session = verifySession(sessionCookie.value);
-  
-  // If session is invalid or expired, show access denied
-  if (!session) {
-    const response = rewriteToAccessDenied(request);
-    // Clear the invalid cookie
-    response.cookies.delete('panama_admin_session');
-    return response;
-  }
-  
-  // Session is valid, allow access
-  return NextResponse.next();
+function isApiPath(pathname) {
+  return pathname.startsWith('/api/');
 }
-
+function isStaticPath(pathname) {
+  return (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/favicon') ||
+    pathname.startsWith('/assets/') ||
+    pathname.includes('.') // files with extensions
+  );
+}
+function pickOrigin(origin) {
+  if (!origin) return null;
+  return ALLOWED_ORIGINS.includes(origin) ? origin : null;
+}
+function applyCorsHeaders(res, origin) {
+  if (origin) res.headers.set('Access-Control-Allow-Origin', origin);
+  res.headers.set('Access-Control-Allow-Methods', CORS_METHODS);
+  res.headers.set('Access-Control-Allow-Headers', CORS_HEADERS);
+  if (CORS_ALLOW_CREDENTIALS) res.headers.set('Access-Control-Allow-Credentials', 'true');
+  res.headers.set('Vary', 'Origin');
+  return res;
+}
 function rewriteToAccessDenied(request) {
-  // Create a new URL for the access denied page
   const url = request.nextUrl.clone();
   url.pathname = '/access-denied';
   url.searchParams.set('from', request.nextUrl.pathname);
-  
-  // Redirect to access denied page instead of showing inline
   return NextResponse.rewrite(url);
 }
 
-// Configure which paths the middleware should run on
+export function middleware(request) {
+  const { pathname } = request.nextUrl;
+
+  // 0) Skip static Next internals / assets
+  if (isStaticPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  // 1) Public API with CORS
+  if (isApiPath(pathname)) {
+    const origin = pickOrigin(request.headers.get('origin'));
+
+    // Preflight
+    if (request.method === 'OPTIONS') {
+      const pre = new NextResponse(null, { status: 204 });
+      return applyCorsHeaders(pre, origin);
+    }
+
+    // Normal API response (let route handle, attach CORS)
+    const nextRes = NextResponse.next();
+    return applyCorsHeaders(nextRes, origin);
+  }
+
+  // 2) Public pages: /login and /access-denied
+  if (PUBLIC_PAGES.has(pathname)) {
+    return NextResponse.next();
+  }
+
+  // 3) Everything else is ADMIN-ONLY (/, /blogs, /blog/*, /categories, etc.)
+  const cookie = request.cookies.get('panama_admin_session');
+  if (!cookie) {
+    return rewriteToAccessDenied(request);
+  }
+
+  const session = verifySession(cookie.value);
+  if (!session) {
+    const res = rewriteToAccessDenied(request);
+    res.cookies.delete('panama_admin_session');
+    return res;
+  }
+
+  // Session valid → allow
+  return NextResponse.next();
+}
+
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
