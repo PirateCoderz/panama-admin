@@ -6,6 +6,7 @@ const AUTH_CREDENTIALS = {
   username: 'adminpanamatravel',
   password: '))np0Gq$p1I+$e', // Change this to a secure password
 };
+// create a complex password of 12 words mix everything with numbers
 
 
 // Session configuration

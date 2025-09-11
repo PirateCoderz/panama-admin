@@ -62,7 +62,7 @@ export async function POST(req) {
     // Detect actual MIME from bytes
     const ft = await fileTypeFromBuffer(buffer);
     const mime = ft?.mime || file.type || '';
-    const allowedMimes = new Set(['image/jpeg', 'image/jpg','image/png', 'image/webp', 'image/avif']);
+    const allowedMimes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
     if (!allowedMimes.has(mime)) {
       return NextResponse.json({ ok: false, error: 'Only JPEG/PNG/WebP/AVIF images allowed' }, { status: 415, headers: CORS_HEADERS });
     }
@@ -75,6 +75,7 @@ export async function POST(req) {
 
     // Build filename
     const baseOrig = sanitizeName(path.parse(file.name || 'upload').name || 'upload');
+    const id = crypto.randomUUID();
     // Optional: convert non-transparent to webp for space savings
     // We'll attempt to preserve PNG if it has alpha
     let outputBuffer = buffer;
@@ -113,7 +114,7 @@ export async function POST(req) {
       finalExt = ext;
     }
 
-    const filename = `${Date.now()}-${baseOrig}${finalExt}`;
+    const filename = `${Date.now()}-${id}-${baseOrig}${finalExt}`;
 
     const publicDir = path.join(process.cwd(), 'public', 'blogs', safeFolder);
     await mkdir(publicDir, { recursive: true });

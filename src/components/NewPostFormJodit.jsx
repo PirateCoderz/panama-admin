@@ -17,14 +17,14 @@ function toSlug(s) {
     .replace(/['"]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
-};
+}
 
 function parseTags(input) {
   return (input || '')
     .split(',')
     .map((t) => t.trim().toLowerCase())
     .filter(Boolean);
-};
+}
 
 export default function NewPostFormJodit() {
   const editorRef = useRef(null);
@@ -110,11 +110,8 @@ export default function NewPostFormJodit() {
 
       // Prefer absolute_url if your API returns it; fallback to url
       const url = data.absolute_url || data.url;
-      console.log(url);
-
       if (url) {
         setFeatured(url);
-        setCanonicalUrl(url);
         // optional success toast
         // await Swal.fire({ icon: "success", title: "Uploaded!", timer: 1200, showConfirmButton: false });
       }
@@ -398,7 +395,7 @@ export default function NewPostFormJodit() {
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && uploadFeatured(e.target.files[0])} />
                 </label>
               )}
-              <p className="mt-2 text-xs text-gray-400">Recommended: 1200×630 (JPG/PNG, &lt; 1.5MB)</p>
+              <p className="mt-2 text-xs text-gray-400">Recommended: 1200×630 (WEBP / PNG, &lt; 1MB)</p>
             </div>
 
             {/* Status + Schedule */}

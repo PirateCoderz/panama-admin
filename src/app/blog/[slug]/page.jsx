@@ -8,11 +8,11 @@ export default async function BlogPostPage({ params }) {
   const slug = params.slug;
   const [rows] = await pool.query(
     `SELECT id, title, slug, excerpt, content_html, featured_image_url,
-      seo_title, seo_description, canonical_url,
-      published_at, created_at, updated_at, tags
-      FROM blogs
-      WHERE slug=? AND status='published' AND deleted_at IS NULL
-      LIMIT 1`,
+            seo_title, seo_description, canonical_url,
+            published_at, created_at, updated_at, tags
+     FROM blogs
+     WHERE slug=? AND status='published' AND deleted_at IS NULL
+     LIMIT 1`,
     [slug]
   );
   if (!rows?.length) return <div className="p-6">Not found</div>;
@@ -20,7 +20,7 @@ export default async function BlogPostPage({ params }) {
 
   const title = post.seo_title || post.title;
   const description = post.seo_description || post.excerpt || '';
-  const canonical = `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${post.featured_image_url}`;
+  const canonical = post.canonical_url || `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${post.slug}`;
 
   return (
     <>
@@ -39,10 +39,10 @@ export default async function BlogPostPage({ params }) {
         {post.featured_image_url && <meta name="twitter:image" content={post.featured_image_url} />}
       </head>
 
-      <article className="prose mx-auto max-w-5xl p-6 dark:prose-invert">
+      <article className="prose mx-auto max-w-3xl p-6 dark:prose-invert">
         <h1>{post.title}</h1>
         {post.featured_image_url && (
-          <Image src={`https://admin.panamatravel.co.uk/blogs/featured/1757431905024-1882126c-5dc7-4037-a353-7023b7c90a06-images-1-.jpg`} alt={post.title} width={1080} height={400} className="my-4 rounded" />
+          <Image src={post.featured_image_url} alt={post.title} width={640} height={360} className="my-4 rounded" />
         )}
         <div dangerouslySetInnerHTML={{ __html: post.content_html || '' }} />
       </article>

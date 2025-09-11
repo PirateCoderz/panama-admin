@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["res.cloudinary.com", "admin.panamatravel.co.uk"],
+    domains: ["res.cloudinary.com"],
   },
   env: {
 
@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
     DB_PASS: "innoHorizon!!2121",
     DB_NAME: "panama",
     NEXT_PUBLIC_ADMIN_ORIGIN: "https://admin.panamatravel.co.uk",
+    NEXT_PUBLIC_ADMIN_UPLOAD_ORIGIN: "https://admin.panamatravel.co.uk",
+
     NEXT_PUBLIC_SITE_ORIGIN: "https://panamatravel.co.uk",
 
     IMAGEKIT_ID: "8lpztmifb",
@@ -22,8 +24,6 @@ const nextConfig: NextConfig = {
     IMAGEKIT_FOLDER_BASE: "/panama/blogs",       // customize the root folder in IK
 
     // # CORS(adjust as needed)
-    NEXT_PUBLIC_ADMIN_UPLOAD_ORIGIN: "https://admin.panamatravel.co.uk",
-
     ALLOWED_ORIGINS: "https://panamatravel.co.uk,https://www.panamatravel.co.uk,http://localhost:3000,http://localhost:5173"
 
 
