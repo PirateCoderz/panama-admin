@@ -17,17 +17,16 @@ const nextConfig: NextConfig = {
 
     NEXT_PUBLIC_SITE_ORIGIN: "https://panamatravel.co.uk",
 
-    IMAGEKIT_ID: "8lpztmifb",
-    IMAGEKIT_PUBLIC_KEY: "public_JTAgYImkR0BrnLBiH8LguJ7FMPw=",
-    IMAGEKIT_PRIVATE_KEY: "private_6PG0VcYdQ3bSfma5w4QQYfRtYX4=",
-    IMAGEKIT_URL_ENDPOINT: "https://ik.imagekit.io/8lpztmifb",
+    IMAGEKIT_ID: "panamatravel",
+    IMAGEKIT_PUBLIC_KEY: "public_7IWC71ECJABRO9nR2BbCI19WOXg=",
+    IMAGEKIT_PRIVATE_KEY: "private_HH84oS/KQN2hYgOx+hUYYDpS4MI=",
+    IMAGEKIT_URL_ENDPOINT: "https://ik.imagekit.io/panamatravel",
     IMAGEKIT_FOLDER_BASE: "/panama/blogs",       // customize the root folder in IK
 
     // # CORS(adjust as needed)
     ALLOWED_ORIGINS: "https://panamatravel.co.uk,https://www.panamatravel.co.uk,http://localhost:3000,http://localhost:5173"
 
-
-  }
+  },
 };
 
 export default nextConfig;

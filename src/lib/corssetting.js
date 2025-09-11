@@ -12,4 +12,4 @@ export function buildCorsHeaders({
     ...(allowCredentials ? { 'Access-Control-Allow-Credentials': 'true' } : {}),
     'Vary': 'Origin',
   };
-}
+};
