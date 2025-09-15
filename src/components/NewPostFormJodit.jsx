@@ -11,56 +11,37 @@ import { Image as PhotoIcon, Tags as TagIcon } from 'lucide-react';
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
 function toSlug(s) {
-  return s
-    .toLowerCase()
-    .trim()
-    .replace(/['"]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
+  return s.toLowerCase().trim().replace(/['"]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
-
 function parseTags(input) {
-  return (input || '')
-    .split(',')
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
+  return (input || '').split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
 }
 
 export default function NewPostFormJodit() {
   const editorRef = useRef(null);
 
+  // blog states
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
-  const [featured, setFeatured] = useState('');
-  const [status, setStatus] = useState('draft'); // draft|scheduled|published|archived
-  const [publishedAt, setPublishedAt] = useState(''); // datetime-local
+  const [status, setStatus] = useState('draft');
+  const [publishedAt, setPublishedAt] = useState('');
 
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
   const [canonicalUrl, setCanonicalUrl] = useState('');
 
-  const [tags, setTags] = useState(''); // comma-separated
-  const [categories, setCategories] = useState([]); // all categories from API
-  const [selectedCats, setSelectedCats] = useState([]); // ids
+  const [tags, setTags] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [selectedCats, setSelectedCats] = useState([]);
+
+  // featured image states
+  const [featuredFile, setFeaturedFile] = useState(null);
+  const [featuredPreview, setFeaturedPreview] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
-
   const joditConfig = useMemo(() => joditBaseConfig, []);
-
-  // keyboard save
-  useEffect(() => {
-    const onKey = (e) => {
-      const isSave = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's';
-      if (isSave) {
-        e.preventDefault();
-        document.getElementById('new-post-form')?.requestSubmit();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   // load categories
   useEffect(() => {
@@ -73,96 +54,25 @@ export default function NewPostFormJodit() {
     })();
   }, []);
 
-
-
-  async function uploadFeatured(file) {
+  // handle featured image selection
+  function handleFeaturedSelect(file) {
     if (!file) return;
-
-    const MAX_BYTES = Math.floor(1.5 * 1024 * 1024); // 1.5 MB = 1,572,864 bytes
-    if (file.size > MAX_BYTES) {
-      await Swal.fire({
-        icon: "error",
-        title: "File too large",
-        text: "Please upload an image smaller than 1.5 MB.",
-        confirmButtonText: "OK",
-      });
-      return;
-    }
-
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-
-      const res = await fetch("/api/blogs/upload?folder=featured", {
-        method: "POST",
-        body: fd,
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        await Swal.fire({
-          icon: "error",
-          title: "Upload failed",
-          text: data?.error || "Something went wrong while uploading.",
-        });
-        return;
-      }
-
-      // Prefer absolute_url if your API returns it; fallback to url
-      const url = data.absolute_url || data.url;
-      if (url) {
-        setFeatured(url);
-        // optional success toast
-        // await Swal.fire({ icon: "success", title: "Uploaded!", timer: 1200, showConfirmButton: false });
-      }
-    } catch (err) {
-      await Swal.fire({
-        icon: "error",
-        title: "Network error",
-        text: "Please check your connection and try again.",
-      });
-    }
+    setFeaturedFile(file);
+    setFeaturedPreview(URL.createObjectURL(file));
   }
+  function removeFeatured() {
+    setFeaturedFile(null);
+    setFeaturedPreview('');
+  };
 
-
-  // async function uploadFeatured(file) {
-  //   const fd = new FormData();
-  //   fd.append('file', file);
-  //   const res = await fetch('/api/blogs/upload?folder=featured', { method: 'POST', body: fd });
-  //   const data = await res.json();
-  //   console.log(data);
-  //   if (data?.ok && data?.url) setFeatured(data.url);
-  // }
-
-  async function removeFeatured() {
-    if (!featured) {
-      setFeatured('');
-      return;
-    }
-    try {
-      // Normalize to a path string for the API
-      const targetPath = featured.startsWith('https')
-        ? new URL(featured).pathname
-        : featured;
-
-      const res = await fetch(`/api/blogs/upload?url=${encodeURIComponent(targetPath)}`, {
-        method: 'DELETE',
-      });
-      // Optional: check response
-      // const data = await res.json();
-    } catch (e) {
-      console.warn('Failed to delete image on server, clearing locally anyway:', e);
-    } finally {
-      setFeatured(''); // clear UI regardless
-    }
-  }
-
-  async function uploadInline(file) {
+  // upload helper
+  async function uploadFile(file, folder = 'content') {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch('/api/blogs/upload?folder=content', { method: 'POST', body: fd });
+    const res = await fetch(`/api/blogs/upload?folder=${folder}`, { method: 'POST', body: fd });
     const data = await res.json();
-    return data?.ok ? data.url : null;
+    if (!res.ok || !data?.ok) throw new Error(data?.error || 'Upload failed');
+    return {url: data.url || data.absolute_url, fileid : data.uploaded?.fileId || null};
   }
 
   async function onSubmit(e) {
@@ -170,35 +80,61 @@ export default function NewPostFormJodit() {
     if (submitting) return;
     setSubmitting(true);
 
-    const payload = {
-      title,
-      slug: slug || toSlug(title),
-      excerpt,
-      content_html: content,
-      featured_image_url: featured || null,
-      status,
-      published_at: publishedAt ? publishedAt.replace('T', ' ') + ':00' : null, // to DATETIME(3) safe format
-      seo_title: seoTitle || null,
-      seo_description: seoDescription || null,
-      canonical_url: canonicalUrl || null,
-      tags: parseTags(tags),
-      category_ids: selectedCats.map((v) => Number(v)).filter(Boolean),
-    };
-
     try {
+      let featuredUrl = null;
+
+      // 1) upload featured image
+      if (featuredFile) {
+        featuredUrl = await uploadFile(featuredFile, 'featured');
+      }
+
+      // 2) upload inline images in Jodit
+      let finalContent = content;
+      const doc = new DOMParser().parseFromString(content, 'text/html');
+      const imgs = Array.from(doc.querySelectorAll('img'));
+
+      for (const img of imgs) {
+        if (img.src.startsWith('blob:')) {
+          const blob = await fetch(img.src).then(r => r.blob());
+          const file = new File([blob], 'inline.png', { type: blob.type });
+          const url = await uploadFile(file, 'content');
+          img.src = url;
+        }
+      }
+      finalContent = doc.body.innerHTML;
+
+      // 3) submit payload
+      const payload = {
+        title,
+        slug: slug || toSlug(title),
+        excerpt,
+        content_html: finalContent,
+        featured_image_url: featuredUrl.url || null,
+        fileid: featuredUrl.fileid || null,
+        status,
+        published_at: publishedAt ? publishedAt.replace('T', ' ') + ':00' : null,
+        seo_title: seoTitle || null,
+        seo_description: seoDescription || null,
+        canonical_url: canonicalUrl || null,
+        tags: parseTags(tags),
+        category_ids: selectedCats,
+      };
+
       const res = await fetch('/api/blogs/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       if (data?.ok) {
-        window.location.href = '/admin/blogs';
+        window.location.href = '/blogs';
       } else {
-        alert(data?.error || 'Failed to create post');
+        await Swal.fire({ icon: 'error', title: 'Failed', text: data?.error || 'Post creation failed' });
       }
-    } catch {
-      alert('Network error. Please try again.');
+    } catch (err) {
+      console.error(err);
+      await Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'Something went wrong' });
     } finally {
       setSubmitting(false);
     }
@@ -234,7 +170,7 @@ export default function NewPostFormJodit() {
               form="new-post-form"
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-teal-600 px-4 py-2 text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-teal-600 px-4 py-2 text-white cursor-pointer shadow-md hover:shadow-lg transition disabled:opacity-50"
             >
               {submitting ? 'Saving…' : 'Create Post'}
             </button>
@@ -253,12 +189,9 @@ export default function NewPostFormJodit() {
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">Title</label>
                   <input
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-900 shadow-sm focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
                     value={title}
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                      if (!slug) setSlug(toSlug(e.target.value));
-                    }}
+                    onChange={(e) => { setTitle(e.target.value); if (!slug) setSlug(toSlug(e.target.value)); }}
                     placeholder="e.g., Discover Hidden Beaches in Antalya"
                     required
                   />
@@ -266,7 +199,7 @@ export default function NewPostFormJodit() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Slug</label>
                       <input
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-900 shadow-sm focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
                         value={slug}
                         onChange={(e) => setSlug(toSlug(e.target.value))}
                         placeholder="discover-hidden-beaches-in-antalya"
@@ -274,10 +207,10 @@ export default function NewPostFormJodit() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
+                      <label className="block text-sm font-medium text-gray-700">Tags</label>
                       <div className="relative">
                         <input
-                          className="w-full rounded-xl border border-gray-200 bg-white px-10 py-2.5 text-gray-900 shadow-sm focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-10 py-2.5"
                           value={tags}
                           onChange={(e) => setTags(e.target.value)}
                           placeholder="turkey, beaches, family, summer"
@@ -299,34 +232,24 @@ export default function NewPostFormJodit() {
 
                 {/* Excerpt */}
                 <div>
-                  <div className="flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-700">Excerpt</label>
-                    <span className="text-xs text-gray-400">{excerpt.length}/240</span>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700">Excerpt</label>
                   <textarea
-                    className="mt-1 w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3"
                     rows={3}
                     maxLength={240}
                     value={excerpt}
                     onChange={(e) => setExcerpt(e.target.value)}
-                    placeholder="Short summary that will appear in listings and link previews…"
                   />
                 </div>
 
                 {/* Content */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Content</label>
-                  <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm focus-within:ring-4 focus-within:ring-sky-100">
+                  <label className="block text-sm font-medium text-gray-700">Content</label>
+                  <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     <JoditEditor
                       ref={editorRef}
                       value={content}
-                      config={{
-                        ...joditConfig,
-                        uploader: {
-                          url: '/api/blogs/upload?folder=content',
-                          insertImageAsBase64URI: false,
-                        },
-                      }}
+                      config={joditConfig}
                       onBlur={(newContent) => setContent(newContent)}
                     />
                   </div>
@@ -340,7 +263,6 @@ export default function NewPostFormJodit() {
                       className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
                       value={seoTitle}
                       onChange={(e) => setSeoTitle(e.target.value)}
-                      placeholder="Concise, keyword-rich title"
                     />
                   </div>
                   <div>
@@ -349,18 +271,16 @@ export default function NewPostFormJodit() {
                       className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
                       value={canonicalUrl}
                       onChange={(e) => setCanonicalUrl(e.target.value)}
-                      placeholder="https://admin.panamatravel.co.uk/images/bogs/"
                     />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">SEO Description</label>
                     <textarea
-                      className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
                       rows={2}
                       maxLength={300}
                       value={seoDescription}
                       onChange={(e) => setSeoDescription(e.target.value)}
-                      placeholder="One or two compelling sentences for search and social previews"
                     />
                   </div>
                 </div>
@@ -373,29 +293,23 @@ export default function NewPostFormJodit() {
             {/* Featured Image */}
             <div className="rounded-2xl border bg-white/70 backdrop-blur p-6 shadow-sm">
               <label className="block text-sm font-medium text-gray-700">Featured Image</label>
-              {featured ? (
-                <div className="mt-3 relative">
-                  <Image src={featured} alt="featured" width={640} height={360} className="h-48 w-full rounded-xl object-cover ring-1 ring-black/5" />
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                      Replace
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && uploadFeatured(e.target.files[0])} />
-                    </label>
-                    <button type="button" onClick={removeFeatured} className="rounded-xl border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              {featuredPreview ? (
+                <div className="mt-3">
+                  <Image src={featuredPreview} alt="featured" width={640} height={360} className="h-48 w-full rounded-xl object-cover" />
+                  <div className="mt-3 grid grid-cols-1 gap-2">
+                    <button type="button" onClick={removeFeatured} className="rounded-xl cursor-pointer border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
                       Remove
                     </button>
                   </div>
                 </div>
               ) : (
-                <label className="mt-3 block cursor-pointer rounded-2xl border border-dashed bg-gradient-to-b from-sky-50/60 to-white p-6 text-center hover:bg-sky-50/80 transition">
+                <label className="mt-3 block cursor-pointer rounded-2xl border border-dashed bg-gradient-to-b from-sky-50/60 to-white p-6 text-center hover:bg-sky-50/80">
                   <PhotoIcon className="mx-auto h-8 w-8 text-sky-400" />
-                  <p className="mt-2 text-sm text-gray-600">
-                    Drag & drop an image, or <span className="font-medium text-sky-700">browse</span>
-                  </p>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files && uploadFeatured(e.target.files[0])} />
+                  <p className="mt-2 text-sm text-gray-600">Drag & drop an image, or <span className="font-medium text-sky-700">browse</span></p>
+                  <input type="file" accept="image/*" hidden onChange={(e) => e.target.files && handleFeaturedSelect(e.target.files[0])} />
                 </label>
               )}
-              <p className="mt-2 text-xs text-gray-400">Recommended: 1200×630 (WEBP / PNG, &lt; 1MB)</p>
+              <p className="mt-2 text-xs text-gray-400">Recommended: 1200×630 (WEBP/PNG, &lt; 1MB)</p>
             </div>
 
             {/* Status + Schedule */}
@@ -416,7 +330,7 @@ export default function NewPostFormJodit() {
                       : 'bg-white text-gray-700 ring-gray-200 hover:bg-gray-50'
                       }`}
                   >
-                    {s[0].toUpperCase() + s.slice(1)}
+                    {s}
                   </button>
                 ))}
               </div>
@@ -428,11 +342,9 @@ export default function NewPostFormJodit() {
                     type="datetime-local"
                     value={publishedAt}
                     onChange={(e) => setPublishedAt(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5"
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
-                    Set now for immediate publish or a future time for scheduling.
-                  </p>
+                  <p className="mt-1 text-xs text-gray-400">Set now for immediate publish or a future time for scheduling.</p>
                 </div>
               )}
             </div>
@@ -440,7 +352,7 @@ export default function NewPostFormJodit() {
             {/* Categories */}
             <div className="rounded-2xl border bg-white/70 backdrop-blur p-6 shadow-sm">
               <label className="block text-sm font-medium text-gray-700">Categories</label>
-              <div className="mt-3 grid grid-cols-1 gap-2 max-h-56 overflow-auto pr-1">
+              <div className="mt-3 grid gap-2 max-h-56 overflow-auto pr-1">
                 {categories.map((c) => {
                   const checked = selectedCats.includes(c.id);
                   return (
@@ -461,12 +373,12 @@ export default function NewPostFormJodit() {
               </div>
             </div>
 
-            {/* Submit (secondary) */}
+            {/* Submit secondary button */}
             <button
               form="new-post-form"
               type="submit"
               disabled={submitting}
-              className="w-full rounded-2xl bg-gray-900 px-4 py-3 text-white shadow hover:shadow-md transition disabled:opacity-50"
+              className="w-full rounded-2xl bg-gray-900 cursor-pointer px-4 py-3 text-white shadow hover:shadow-md disabled:opacity-50"
             >
               {submitting ? 'Saving…' : 'Create Post'}
             </button>

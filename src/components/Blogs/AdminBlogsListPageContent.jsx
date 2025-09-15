@@ -74,8 +74,23 @@ function AdminBlogsListPageContent() {
     setSelected(blog);
     setOpen(true);
   }
+  // function onEdit(blog) {
+  //   router.push(`/blogs/edit/${blog.id}`);
+  // }
   function onEdit(blog) {
-    router.push(`/blogs/edit/${blog.id}`);
+    Swal.fire({
+      title: 'Edit Blog?',
+      text: `Do you want to edit "${blog.title}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Edit',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.push(`/blogs/edit/${blog.id}`);
+      }
+    });
   }
 
   async function onDelete(blog) {
@@ -239,19 +254,19 @@ function AdminBlogsListPageContent() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => onView(b)}
-                          className="rounded-lg border px-3 py-1.5 hover:bg-[color-mix(in_oklab,var(--text-secondary)_6%,transparent)]"
+                          className="rounded-lg cursor-pointer border px-3 py-1.5 hover:bg-[color-mix(in_oklab,var(--text-secondary)_6%,transparent)]"
                         >
                           View
                         </button>
                         <button
                           onClick={() => onEdit(b)}
-                          className="rounded-lg border px-3 py-1.5 hover:bg-[color-mix(in_oklab,var(--text-secondary)_6%,transparent)]"
+                          className="rounded-lg cursor-pointer border px-3 py-1.5 hover:bg-[color-mix(in_oklab,var(--text-secondary)_6%,transparent)]"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => onDelete(b)}
-                          className="rounded-lg bg-[var(--accent,#D81B60)] px-3 py-1.5 text-white hover:brightness-95"
+                          className="rounded-lg cursor-pointer bg-[var(--accent,#D81B60)] px-3 py-1.5 text-white hover:brightness-95"
                         >
                           Delete
                         </button>

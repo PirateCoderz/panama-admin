@@ -18,7 +18,7 @@ export async function GET(_req, context) {
     const [rows] = await conn.query(
       `SELECT id, author_id, title, slug, excerpt, content_html, featured_image_url,
               JSON_EXTRACT(tags, '$') AS tags,
-              status, seo_title, seo_description, canonical_url, published_at,
+              status, seo_title, seo_description, canonical_url, fileid, published_at,
               created_at, updated_at
        FROM blogs WHERE id=? LIMIT 1`,
       [id]
@@ -130,7 +130,7 @@ export async function PUT(req, context) {
     console.error('[PUT /api/blogs/posts/:id] Error:', e);
     try {
       if (conn) await conn.rollback();
-    } catch {}
+    } catch { }
     if (e?.code === 'ER_DUP_ENTRY') {
       return NextResponse.json({ ok: false, error: 'Slug already exists.' }, { status: 409 });
     }
