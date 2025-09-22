@@ -7,7 +7,7 @@ export const revalidate = 0;
 export default async function BlogPostPage({ params }) {
   const slug = params.slug;
   const [rows] = await pool.query(
-    `SELECT id, title, slug, excerpt, content_html, featured_image_url,
+    `SELECT id, title, slug, excerpt, content_html,
             seo_title, seo_description, canonical_url,
             published_at, created_at, updated_at, tags
      FROM blogs
@@ -32,17 +32,17 @@ export default async function BlogPostPage({ params }) {
         <meta property="og:title" content={title} />
         {description && <meta property="og:description" content={description} />}
         <meta property="og:url" content={canonical} />
-        {post.featured_image_url && <meta property="og:image" content={post.featured_image_url} />}
+        {post.canonical_url && <meta property="og:image" content={post.canonical_url} />}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         {description && <meta name="twitter:description" content={description} />}
-        {post.featured_image_url && <meta name="twitter:image" content={post.featured_image_url} />}
+        {post.canonical_url && <meta name="twitter:image" content={post.canonical_url} />}
       </head>
 
       <article className="prose mx-auto max-w-3xl p-6 dark:prose-invert">
-        <h1>{post.title}</h1>
-        {post.featured_image_url && (
-          <Image src={post.featured_image_url} alt={post.title} width={640} height={360} className="my-4 rounded" />
+        <h1 className='text-3xl font-bold'>{post.title}</h1>
+        {post.canonical_url && (
+          <Image src={post.canonical_url} alt={post.title} width={640} height={360} className="my-4 rounded" />
         )}
         <div dangerouslySetInnerHTML={{ __html: post.content_html || '' }} />
       </article>

@@ -1,12 +1,9 @@
 'use client';
-
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Swal from "sweetalert2";
-
 import { joditBaseConfig } from '@/lib/joditConfig';
-import { Image as PhotoIcon, Tags as TagIcon } from 'lucide-react';
+import { Tags as TagIcon } from 'lucide-react';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
 
@@ -36,10 +33,6 @@ export default function NewPostFormJodit() {
   const [categories, setCategories] = useState([]);
   const [selectedCats, setSelectedCats] = useState([]);
 
-  // featured image states
-  const [featuredFile, setFeaturedFile] = useState(null);
-  const [featuredPreview, setFeaturedPreview] = useState('');
-
   const [submitting, setSubmitting] = useState(false);
   const joditConfig = useMemo(() => joditBaseConfig, []);
 
@@ -54,63 +47,18 @@ export default function NewPostFormJodit() {
     })();
   }, []);
 
-  // handle featured image selection
-  function handleFeaturedSelect(file) {
-    if (!file) return;
-    setFeaturedFile(file);
-    setFeaturedPreview(URL.createObjectURL(file));
-  }
-  function removeFeatured() {
-    setFeaturedFile(null);
-    setFeaturedPreview('');
-  };
-
-  // upload helper
-  async function uploadFile(file, folder = 'content') {
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch(`/api/blogs/upload?folder=${folder}`, { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!res.ok || !data?.ok) throw new Error(data?.error || 'Upload failed');
-    return {url: data.url || data.absolute_url, fileid : data.uploaded?.fileId || null};
-  }
-
   async function onSubmit(e) {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
 
     try {
-      let featuredUrl = null;
-
-      // 1) upload featured image
-      if (featuredFile) {
-        featuredUrl = await uploadFile(featuredFile, 'featured');
-      }
-
-      // 2) upload inline images in Jodit
-      let finalContent = content;
-      const doc = new DOMParser().parseFromString(content, 'text/html');
-      const imgs = Array.from(doc.querySelectorAll('img'));
-
-      for (const img of imgs) {
-        if (img.src.startsWith('blob:')) {
-          const blob = await fetch(img.src).then(r => r.blob());
-          const file = new File([blob], 'inline.png', { type: blob.type });
-          const url = await uploadFile(file, 'content');
-          img.src = url;
-        }
-      }
-      finalContent = doc.body.innerHTML;
-
-      // 3) submit payload
+      // submit payload
       const payload = {
         title,
         slug: slug || toSlug(title),
         excerpt,
-        content_html: finalContent,
-        featured_image_url: featuredUrl.url || null,
-        fileid: featuredUrl.fileid || null,
+        content_html: content,
         status,
         published_at: publishedAt ? publishedAt.replace('T', ' ') + ':00' : null,
         seo_title: seoTitle || null,
@@ -290,28 +238,6 @@ export default function NewPostFormJodit() {
 
           {/* Right: Sidebar */}
           <div className="space-y-6">
-            {/* Featured Image */}
-            <div className="rounded-2xl border bg-white/70 backdrop-blur p-6 shadow-sm">
-              <label className="block text-sm font-medium text-gray-700">Featured Image</label>
-              {featuredPreview ? (
-                <div className="mt-3">
-                  <Image src={featuredPreview} alt="featured" width={640} height={360} className="h-48 w-full rounded-xl object-cover" />
-                  <div className="mt-3 grid grid-cols-1 gap-2">
-                    <button type="button" onClick={removeFeatured} className="rounded-xl cursor-pointer border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <label className="mt-3 block cursor-pointer rounded-2xl border border-dashed bg-gradient-to-b from-sky-50/60 to-white p-6 text-center hover:bg-sky-50/80">
-                  <PhotoIcon className="mx-auto h-8 w-8 text-sky-400" />
-                  <p className="mt-2 text-sm text-gray-600">Drag & drop an image, or <span className="font-medium text-sky-700">browse</span></p>
-                  <input type="file" accept="image/*" hidden onChange={(e) => e.target.files && handleFeaturedSelect(e.target.files[0])} />
-                </label>
-              )}
-              <p className="mt-2 text-xs text-gray-400">Recommended: 1200×630 (WEBP/PNG, &lt; 1MB)</p>
-            </div>
-
             {/* Status + Schedule */}
             <div className="rounded-2xl border bg-white/70 backdrop-blur p-6 shadow-sm">
               <label className="block text-sm font-medium text-gray-700">Status</label>

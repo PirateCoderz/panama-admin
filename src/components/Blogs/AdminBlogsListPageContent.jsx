@@ -346,9 +346,9 @@ function AdminBlogsListPageContent() {
               </div>
               <div className="sm:col-span-2">
                 <div className="text-[var(--text-secondary)]">Featured Image</div>
-                {selected.featured_image_url ? (
+                {selected.canonical_url ? (
                   <Image
-                    src={selected.featured_image_url}
+                    src={selected.canonical_url}
                     alt="Featured"
                     width={640}
                     height={360}

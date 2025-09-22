@@ -1,149 +1,171 @@
-'use client';
+"use client";
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { LayoutDashboard, Sun, Moon, User, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { clientAuth } from "@/lib/auth-client";
+import Swal from "sweetalert2";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, Phone, Home, Briefcase, Mail } from 'lucide-react';
-import Image from 'next/image';
-
-// Keep only 3 items
-const menuLinks = [
-  { label: 'Home', to: 'home-section', type: 'scroll', icon: <Home size={18} /> },
-  { label: 'Blogs', to: '/blogs', type: 'scroll', icon: <Briefcase size={18} /> },
-  { label: 'Contact Us', href: '/contact-us', type: 'route', icon: <Mail size={18} /> },
-];
 
 export default function Header() {
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-
-  const pathname = usePathname();
   const router = useRouter();
-  const isHomePage = pathname === '/';
+  const [darkMode, setDarkMode] = useState(false);
+  const [user, setUser] = useState("admin");
 
-  const closeMenu = () => setShowMobileMenu(false);
-
-  // Close mobile drawer on >= lg
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024 && showMobileMenu) setShowMobileMenu(false);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [showMobileMenu]);
+    const savedDarkMode = localStorage.getItem("darkMode");
+    if (savedDarkMode) {
+      setDarkMode(JSON.parse(savedDarkMode));
+    }
+  }, []);
 
-  // Smooth-scroll to a section
-  const handleSectionClick = (sectionId) => {
-    if (isHomePage) {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        const y = el.getBoundingClientRect().top + window.scrollY - 80;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
+  useEffect(() => {
+    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
     } else {
-      router.push(`/?scroll=${sectionId}`);
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const handleLogout = async () => {
+    try {
+      const success = await clientAuth.logout();
+      if (success) {
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
-  const renderNavLink = (item, className = '', onClick) => {
-    const icon = item.icon ? <span className="mr-2">{item.icon}</span> : null;
-    if (item.type === 'scroll') {
-      return (
-        <span
-          key={item.label}
-          className={`cursor-pointer flex items-center ${className}`}
-          onClick={() => {
-            handleSectionClick(item.to);
-            onClick?.();
-          }}
-        >
-          {icon}
-          <span>{item.label}</span>
-        </span>
-      );
+  async function refreshHomepageCache() {
+    const confirm = await Swal.fire({
+      title: "Refresh Homepage Data?",
+      text: "This will re-fetch data from the database and update the cache.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, refresh it",
+      cancelButtonText: "Cancel"
+    });
+
+    if (!confirm.isConfirmed) return; // user cancelled
+
+    try {
+      const res = await fetch("/api/homepage", { method: "POST" });
+      const data = await res.json();
+
+      if (data.ok) {
+        Swal.fire({
+          icon: "success",
+          title: "Cache Refreshed ✅",
+          text: "Homepage data was updated successfully.",
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: data.error || "Something went wrong."
+        });
+      }
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message || "Failed to refresh homepage cache."
+      });
     }
-    return (
-      <Link
-        key={item.label}
-        href={item.href || '/'}
-        className={`flex items-center ${className}`}
-        onClick={onClick}
-      >
-        {icon}
-        <span>{item.label}</span>
-      </Link>
-    );
-  };
+  }
 
   return (
-    <div className="w-full bg-white text-primary shadow">
-      {/* === Mobile Top Bar === */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-2">
-        <button onClick={() => setShowMobileMenu(true)} className="flex items-center gap-1">
-          <Menu size={22} />
-          <span className="text-xs">Menu</span>
-        </button>
+    <header
+      className={`${darkMode ? "bg-gray-900/95 border-gray-800" : "bg-white/95 border-gray-200"
+        } backdrop-blur-sm border-b sticky top-0 z-50`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo + Title */}
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+              <LayoutDashboard className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1
+                className={`text-xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"
+                  }`}
+              >
+                Admin Dashboard
+              </h1>
+              <p
+                className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}
+              >
+                Panama Travel Administration
+              </p>
+            </div>
+          </div>
 
-        <div className="text-2xl font-bold text-center">
-          <Link href="/">Panama Travel</Link>
+          {/* Actions */}
+          <div className="flex items-center space-x-4">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              {darkMode ? (
+                <Sun className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-600" />
+              )}
+            </button>
+
+            {/* Homepage Link */}
+            <Link
+              href="/homepage"
+              className={`px-4 py-2 rounded-lg border transition-colors ${darkMode
+                ? "border-gray-700 text-gray-300 hover:bg-gray-800"
+                : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                }`}
+            >
+              Homepage
+            </Link>
+
+            {/* User Info + Logout */}
+            <div className="flex items-center space-x-2">
+              <div
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${darkMode
+                  ? "bg-gray-800 text-gray-300"
+                  : "bg-gray-100 text-gray-700"
+                  }`}
+              >
+                <User className="w-4 h-4" />
+                <span className="text-sm font-medium">{user}</span>
+              </div>
+              <button
+                onClick={refreshHomepageCache}
+                className="px-4 py-2 bg-blue-600 cursor-pointer text-white rounded-md"
+              >
+                Refetch Data
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-lg bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-900/70 text-red-600 dark:text-red-400 transition-colors"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
-
-        <a
-          href="tel:+442071770066"
-          className="text-xs px-3 py-1 rounded-sm flex items-center gap-1 bg-primary text-white"
-        >
-          <Phone size={14} /> Call Us
-        </a>
       </div>
-
-      {/* Overlay for mobile */}
-      {showMobileMenu && (
-        <div className="fixed inset-0 bg-black/20 z-40 lg:hidden" onClick={closeMenu} />
-      )}
-
-      {/* === Mobile Drawer Menu === */}
-      <div
-        className={`fixed top-0 right-0 h-full w-64 z-50 transform transition-transform duration-300 ${
-          showMobileMenu ? 'translate-x-0' : 'translate-x-full'
-        } bg-white text-primary`}
-      >
-        <div className="flex items-center justify-between px-4 py-4 bg-primary text-white">
-          <h2 className="font-semibold text-lg">Menu</h2>
-          <button onClick={closeMenu}>
-            <X size={26} />
-          </button>
-        </div>
-        <ul className="space-y-2 text-base py-2">
-          {menuLinks.map((item) => (
-            <li key={item.label} className="transition duration-200 ease-in-out hover:bg-gray-100">
-              {renderNavLink(item, 'block w-full px-4 py-2', closeMenu)}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* === Desktop Navbar === */}
-      <div className="hidden lg:flex justify-between items-center py-2 px-6">
-        {/* Logo */}
-        <Link href="/">
-          <Image
-            src="/images/panamatravellogo.png"
-            alt="Logo"
-            width={200}
-            height={50}
-            className="h-16 w-auto transition-opacity"
-          />
-        </Link>
-
-        {/* NAVIGATION BAR (3 items only) */}
-        <nav className="flex gap-2">
-          {menuLinks.map((item) =>
-            renderNavLink(
-              item,
-              'px-3 py-2 font-medium text-primary hover:underline transition',
-            ),
-          )}
-        </nav>
-      </div>
-    </div>
+    </header>
   );
 }

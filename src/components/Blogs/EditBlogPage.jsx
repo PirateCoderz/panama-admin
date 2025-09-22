@@ -5,8 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Swal from "sweetalert2";
 import { joditBaseConfig } from '@/lib/joditConfig';
-import { Image as PhotoIcon, Tags as TagIcon } from 'lucide-react';
-import Image from 'next/image';
+import { Tags as TagIcon } from 'lucide-react';
 import LoaderSection from '@/components/Utils/LoaderSection';
 
 const JoditEditor = dynamic(() => import('jodit-react'), { ssr: false });
@@ -34,10 +33,6 @@ export default function EditBlogPage({ id }) {
   const [slug, setSlug] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
-  const [featured, setFeatured] = useState(''); // existing image url
-  const [fileId, setFileId] = useState(null); // store imagekit fileId
-  const [newFeaturedFile, setNewFeaturedFile] = useState(null);
-  const [preview, setPreview] = useState('');
   const [status, setStatus] = useState('draft');
   const [publishedAt, setPublishedAt] = useState('');
 
@@ -68,8 +63,6 @@ export default function EditBlogPage({ id }) {
         setSlug(b.slug || '');
         setExcerpt(b.excerpt || '');
         setContent(b.content_html || '');
-        setFeatured(b.featured_image_url || '');
-        setFileId(b.fileid || null);
         setStatus(b.status || 'draft');
         setPublishedAt(toDatetimeLocal(b.published_at) || '');
         setSeoTitle(b.seo_title || '');
@@ -85,59 +78,6 @@ export default function EditBlogPage({ id }) {
     })();
   }, [id]);
 
-  // ---- Featured Image ----
-  async function handleDelete() {
-    if (!fileId) return;
-
-    const res = await Swal.fire({
-      title: 'Delete image?',
-      text: 'This will permanently delete the image from ImageKit.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (res.isConfirmed) {
-      try {
-        const delRes = await fetch(
-          `/api/blogs/upload?fileid=${encodeURIComponent(fileId)}&canonical_url=${encodeURIComponent(canonicalUrl)}`,
-          { method: 'DELETE' }
-        );
-        const delData = await delRes.json();
-        if (!delRes.ok || !delData?.success) throw new Error(delData?.error || 'Delete failed');
-
-        setFeatured('');
-        setFileId(null);
-        setPreview('');
-        Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1200, showConfirmButton: false });
-      } catch (err) {
-        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
-      }
-    }
-  }
-
-  function handleRemove() {
-    setFeatured('');
-    setNewFeaturedFile(null);
-    setPreview('');
-  }
-
-  async function handleReplace(file) {
-    setNewFeaturedFile(file);
-    setPreview(URL.createObjectURL(file));
-  }
-
-  async function uploadFile(file) {
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/blogs/upload?folder=featured', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!res.ok || !data?.ok) throw new Error(data?.error || 'Upload failed');
-    setFileId(data.uploaded?.fileId || null);
-    return data.url || data.absolute_url;
-  }
-
   // ---- Save ----
   async function onSave(e) {
     e.preventDefault();
@@ -145,19 +85,11 @@ export default function EditBlogPage({ id }) {
     setSaving(true);
 
     try {
-      let featuredUrl = featured;
-
-      if (newFeaturedFile) {
-        featuredUrl = await uploadFile(newFeaturedFile);
-      }
-
       const payload = {
         title,
         slug: slug || toSlug(title),
         excerpt,
         content_html: content,
-        featured_image_url: featuredUrl || null,
-        fileid: fileId,
         status,
         published_at: publishedAt ? publishedAt.replace('T', ' ') + ':00' : null,
         seo_title: seoTitle || null,
@@ -203,7 +135,9 @@ export default function EditBlogPage({ id }) {
               ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
               : status === 'scheduled'
                 ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200'
-                : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                : status === 'archived'
+                  ? 'bg-gray-100 text-gray-800 ring-gray-200'
+                  : 'bg-amber-50 text-amber-800 ring-amber-200'
               }`}>{status}</span>
             <button
               onClick={onSave}
@@ -270,33 +204,6 @@ export default function EditBlogPage({ id }) {
 
           {/* Right: Sidebar */}
           <div className="space-y-6">
-            {/* Featured Image */}
-            <div className="rounded-2xl border bg-white/70 backdrop-blur p-6 shadow-sm">
-              <label className="block text-sm font-medium">Featured Image</label>
-              {featured || preview ? (
-                <div className="mt-3">
-                  <Image src={preview || featured} alt="featured" width={640} height={360} className="h-48 w-full rounded-xl object-cover" />
-                  <div className="mt-3 grid grid-cols-1 gap-2">
-                    {fileId ? (
-                      <button type="button" onClick={handleDelete} className="rounded-xl border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Delete
-                      </button>
-                    ) : (
-                      <button type="button" onClick={handleRemove} className="rounded-xl cursor-pointer border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <label className="mt-3 block cursor-pointer rounded-2xl border border-dashed bg-gradient-to-b from-sky-50/60 to-white p-6 text-center hover:bg-sky-50/80">
-                  <PhotoIcon className="mx-auto h-8 w-8 text-sky-400" />
-                  <p className="mt-2 text-sm text-gray-600">Drag & drop an image, or <span className="font-medium text-sky-700">browse</span></p>
-                  <input type="file" accept="image/*" hidden onChange={(e) => e.target.files && handleReplace(e.target.files[0])} />
-                </label>
-              )}
-            </div>
-
             {/* Status */}
             <div className="rounded-2xl border bg-white/70 backdrop-blur p-6 shadow-sm">
               <label className="block text-sm font-medium">Status</label>

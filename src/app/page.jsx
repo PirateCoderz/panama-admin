@@ -124,10 +124,10 @@ function AdminDashboardContent() {
       title: "Website Content",
       description: "Edit website content and pages",
       icon: <Globe className="w-8 h-8" />,
-      href: "#",
+      href: "/homepage",
       color: "from-green-500 to-green-600",
-      available: false,
-      stats: "Coming Soon",
+      available: true,
+      stats: "",
     },
     {
       title: "User Management",

@@ -17,12 +17,7 @@ const nextConfig: NextConfig = {
 
     NEXT_PUBLIC_SITE_ORIGIN: "https://panamatravel.co.uk",
 
-    IMAGEKIT_ID: "panamatravel",
-    IMAGEKIT_PUBLIC_KEY: "public_7IWC71ECJABRO9nR2BbCI19WOXg=",
-    IMAGEKIT_PRIVATE_KEY: "private_HH84oS/KQN2hYgOx+hUYYDpS4MI=",
-    IMAGEKIT_URL_ENDPOINT: "https://ik.imagekit.io/panamatravel",
-    IMAGEKIT_FOLDER_BASE: "/panama/blogs",       // customize the root folder in IK
-
+ 
     // # CORS(adjust as needed)
     ALLOWED_ORIGINS: "https://panamatravel.co.uk,https://www.panamatravel.co.uk,http://localhost:3000,http://localhost:5173"
 

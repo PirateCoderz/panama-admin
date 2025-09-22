@@ -6,7 +6,7 @@ export const revalidate = 0; // disable ISR while developing
 
 export default async function BlogIndexPage() {
   const [posts] = await mysqlpool.query(
-    `SELECT id, title, slug, excerpt, featured_image_url, published_at
+    `SELECT id, title, slug, excerpt, canonical_url, published_at
      FROM blogs
      WHERE status='published' AND deleted_at IS NULL
      ORDER BY COALESCE(published_at, created_at) DESC
@@ -19,9 +19,9 @@ export default async function BlogIndexPage() {
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {posts.map((p) => (
           <li key={p.id} className="border rounded p-4">
-            {p.featured_image_url && (
+            {p.canonical_url && (
               <Image
-                src={p.featured_image_url}
+                src={p.canonical_url}
                 alt={p.title}
                 width={640}
                 height={360}

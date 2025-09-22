@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import mysqlPool from '@/lib/mysql';
 
-
+// ---------- GET ----------
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get('q') || '').trim().toLowerCase();
@@ -15,11 +15,11 @@ export async function GET(req) {
   try {
     conn = await mysqlPool.getConnection();
 
-    // Base blog rows
     const where = [];
     const params = [];
     if (status && ['draft', 'scheduled', 'published', 'archived'].includes(status)) {
-      where.push('b.status = ?'); params.push(status);
+      where.push('b.status = ?');
+      params.push(status);
     }
     if (q) {
       where.push('(LOWER(b.title) LIKE ? OR LOWER(b.slug) LIKE ? OR LOWER(b.excerpt) LIKE ?)');
@@ -29,7 +29,7 @@ export async function GET(req) {
     const sql = `
       SELECT 
         b.id, b.title, b.slug, b.status, b.published_at, b.created_at, b.updated_at,
-        b.excerpt, b.featured_image_url, b.canonical_url,
+        b.excerpt, b.canonical_url,
         GROUP_CONCAT(JSON_OBJECT('id', c.id, 'name', c.name) ORDER BY c.name SEPARATOR '||') AS cats
       FROM blogs b
       LEFT JOIN blog_categories bc ON bc.blog_id = b.id
@@ -51,12 +51,15 @@ export async function GET(req) {
       created_at: r.created_at,
       updated_at: r.updated_at,
       excerpt: r.excerpt,
-      featured_image_url: r.featured_image_url,
       canonical_url: r.canonical_url,
       categories: r.cats
         ? r.cats.split('||').map((j) => {
-          try { return JSON.parse(j); } catch { return null; }
-        }).filter(Boolean)
+            try {
+              return JSON.parse(j);
+            } catch {
+              return null;
+            }
+          }).filter(Boolean)
         : [],
     }));
 
@@ -69,8 +72,7 @@ export async function GET(req) {
   }
 }
 
-
-
+// ---------- POST ----------
 export async function POST(req) {
   let conn;
   try {
@@ -80,14 +82,13 @@ export async function POST(req) {
     const slug = (body?.slug || '').trim();
     const excerpt = body?.excerpt ?? null;
     const content_html = body?.content_html ?? null;
-    const featured_image_url = body?.featured_image_url ?? null;
     const status = (body?.status || 'draft').trim(); // draft|scheduled|published|archived
     const tags = Array.isArray(body?.tags) ? body.tags : [];
     const seo_title = body?.seo_title ?? null;
     const seo_description = body?.seo_description ?? null;
     const canonical_url = body?.canonical_url ?? null;
     const published_at = body?.published_at || null; // 'YYYY-MM-DD HH:mm:ss' or null
-    const author_id = body?.author_id || null; // optional
+    const author_id = body?.author_id || null;
     const category_ids = Array.isArray(body?.category_ids) ? body.category_ids : [];
 
     if (!title || !slug) {
@@ -99,16 +100,15 @@ export async function POST(req) {
 
     const [res] = await conn.query(
       `INSERT INTO blogs
-        (author_id, title, slug, excerpt, content_html, featured_image_url, tags, status,
+        (author_id, title, slug, excerpt, content_html, tags, status,
          seo_title, seo_description, canonical_url, published_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         author_id,
         title,
         slug,
         excerpt,
         content_html,
-        featured_image_url,
         JSON.stringify(tags || []),
         status,
         seo_title,
@@ -137,7 +137,6 @@ export async function POST(req) {
   } catch (e) {
     console.error('[POST /api/blogs/posts] Error:', e);
     try { if (conn) await conn.rollback(); } catch { }
-    // Handle duplicate slug
     if (e?.code === 'ER_DUP_ENTRY') {
       return NextResponse.json({ ok: false, error: 'Slug already exists.' }, { status: 409 });
     }
